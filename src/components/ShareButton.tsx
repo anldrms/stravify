@@ -25,7 +25,7 @@ export default function ShareButton({
 }) {
   
   const handleShare = () => {
-    const baseUrl = "https://stravify-rho.vercel.app";
+    const baseUrl = "https://stravify-ai.vercel.app";
     const ogUrl = `${baseUrl}/api/og?distance=${distance}&elevation=${elevation}&runs=${runs}&time=${time}&city=${encodeURIComponent(city)}&name=${encodeURIComponent(name)}&lang=${lang}`;
     
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(baseUrl)}`;

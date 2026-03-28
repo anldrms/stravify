@@ -55,9 +55,8 @@ export async function GET(req: NextRequest) {
             </div>
 
             <div style={{ display: 'flex', fontSize: '24px', color: '#71717a', fontWeight: 'bold' }}>
-              stravify-rho.vercel.app
-            </div>
-          </div>
+             stravify-ai.vercel.app
+            </div>          </div>
 
           {/* Sağ Kısım - İstatistik Kartları */}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '20px', justifyContent: 'center' }}>

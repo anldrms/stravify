@@ -159,13 +159,6 @@ export default async function Home() {
     );
   }
 
-  // Giriş yapmamış kullanıcı sayfası
-  const headersList = await headers();
-  const acceptLanguage = headersList.get("accept-language") || "";
-  const isTr = acceptLanguage.toLowerCase().includes("tr");
-  const lang: Language = isTr ? "tr" : "en";
-  const dict = getDictionary(lang);
-
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[#09090b] text-white p-6 overflow-hidden relative font-sans">
       <div className="absolute top-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-orange-600/15 via-[#09090b] to-[#09090b] -z-10"></div>
