@@ -4,6 +4,7 @@ import LoginButton from "@/components/LoginButton";
 import { getStravaActivities, calculateMetrics } from "@/lib/strava";
 import { ArrowRight, Mountain, Route, Award, Footprints } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
+import ShareButton from "@/components/ShareButton";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
@@ -39,14 +40,14 @@ export default async function Home() {
             {errorMsg}
           </div>
         ) : (
-          <div className="w-full max-w-5xl space-y-12 z-10">
+          <div className="w-full max-w-5xl space-y-12 z-10 flex flex-col items-center">
             <div className="text-center space-y-4">
               <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight">Senin <span className="text-orange-500">PacePrint'in</span></h2>
               <p className="text-zinc-400 text-lg">Son 100 aktivitenin efsanevi dökümü.</p>
             </div>
 
             {/* Main Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
               <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 hover:border-orange-500/50 transition-colors">
                 <Route className="w-8 h-8 text-orange-400 mb-2" />
                 <span className="text-4xl font-black">{metrics?.totalDistanceKm}</span>
@@ -69,9 +70,20 @@ export default async function Home() {
               </div>
             </div>
 
+            {/* Share Button */}
+            {metrics && (
+              <ShareButton 
+                distance={metrics.totalDistanceKm} 
+                elevation={metrics.totalElevationMeters} 
+                runs={metrics.runCount}
+                name={session.user?.name || "Bir Koşucu"}
+              />
+            )}
+
             {/* Fun Facts Cards */}
-            <h3 className="text-2xl font-bold mt-12 mb-6 border-b border-zinc-800 pb-4">Eğlenceli İstatistikler 🤯</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="w-full">
+              <h3 className="text-2xl font-bold mt-12 mb-6 border-b border-zinc-800 pb-4">Eğlenceli İstatistikler 🤯</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 p-8 rounded-3xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl group-hover:bg-orange-500/20 transition-all"></div>
