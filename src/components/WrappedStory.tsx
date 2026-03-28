@@ -1,212 +1,283 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronLeft, Mountain, Route, Award, Footprints, Clock, MapPin, Heart, Zap, Calendar } from "lucide-react";
+import { Mountain, Route, Award, Footprints, Clock, MapPin, Heart, Zap, Calendar, Share2, Volume2 } from "lucide-react";
 import ShareButton from "./ShareButton";
 import { Language } from "@/lib/i18n";
 
+const SLIDE_DURATION = 5000; // Her slayt 5 saniye
+
 export default function WrappedStory({ metrics, dict, lang, name }: { metrics: any, dict: any, lang: Language, name: string }) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [progress, setProgress] = useState(0);
 
   const slides = [
-    // Slide 1: Welcome
     {
-      id: "welcome",
+      id: "intro",
+      title: dict.yourWrapped,
+      subtitle: dict.subtitle,
+      image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&q=80&w=1200",
       content: (
-        <div className="flex flex-col items-center justify-center text-center space-y-6">
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-24 h-24 rounded-full bg-gradient-to-tr from-orange-500 to-rose-500 shadow-[0_0_50px_rgba(249,115,22,0.5)] mb-4" />
-          <motion.h2 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-6xl md:text-8xl font-black tracking-tighter italic uppercase text-orange-500">
-            {dict.yourWrapped}
+        <div className="text-center px-6">
+          <motion.div 
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="w-32 h-32 rounded-3xl bg-gradient-to-tr from-orange-500 to-rose-600 shadow-[0_0_80px_rgba(249,115,22,0.6)] mx-auto mb-10 rotate-12" 
+          />
+          <motion.h2 
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="text-7xl md:text-9xl font-black italic uppercase leading-none tracking-tighter"
+          >
+            STRAVIFY <br/> <span className="text-orange-500">2026</span>
           </motion.h2>
-          <motion.p initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1, transition: { delay: 0.2 } }} className="text-2xl text-zinc-400 font-medium italic">
-            {dict.subtitle}
-          </motion.p>
         </div>
-      ),
-      bg: "bg-[#09090b]"
+      )
     },
-    // Slide 2: Distance & Time
     {
-      id: "stats",
+      id: "distance",
+      title: dict.totalKm,
+      image: "https://images.unsplash.com/photo-1502904538981-05970ad9b48b?auto=format&fit=crop&q=80&w=1200",
       content: (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl px-4">
-          <motion.div initial={{ x: -100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="bg-zinc-900/60 p-10 rounded-3xl border border-orange-500/20 shadow-2xl backdrop-blur-xl">
-             <Route className="w-12 h-12 text-orange-500 mb-6" />
-             <div className="text-7xl font-black text-white">{metrics.totalDistanceKm}</div>
-             <div className="text-xl text-zinc-500 font-bold uppercase tracking-widest mt-2">{dict.totalKm}</div>
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="bg-orange-500/20 p-6 rounded-full backdrop-blur-md mb-4">
+             <Route className="w-16 h-16 text-orange-500" />
           </motion.div>
-          <motion.div initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="bg-zinc-900/60 p-10 rounded-3xl border border-rose-500/20 shadow-2xl backdrop-blur-xl">
-             <Clock className="w-12 h-12 text-rose-500 mb-6" />
-             <div className="text-7xl font-black text-white">{metrics.totalHours}</div>
-             <div className="text-xl text-zinc-500 font-bold uppercase tracking-widest mt-2">{dict.time}</div>
+          <div className="text-zinc-400 font-bold uppercase tracking-widest">{dict.totalKm}</div>
+          <motion.div 
+             initial={{ y: 20, opacity: 0 }}
+             animate={{ y: 0, opacity: 1 }}
+             className="text-[12rem] md:text-[15rem] font-black leading-none tracking-tighter italic text-white"
+          >
+            {metrics.totalDistanceKm}
           </motion.div>
         </div>
-      ),
-      bg: "bg-[radial-gradient(circle_at_top_left,_#1a1a1a_0%,_#09090b_50%)]"
+      )
     },
-    // Slide 3: Behavior (Day & Time)
+    {
+      id: "city",
+      title: dict.topCity,
+      image: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&q=80&w=1200",
+      content: (
+        <div className="text-center space-y-8">
+           <motion.div initial={{ y: -50 }} animate={{ y: 0 }} className="inline-block bg-white/10 backdrop-blur-xl border border-white/20 px-6 py-2 rounded-full text-xl font-bold italic mb-4">
+             {dict.topCity}
+           </motion.div>
+           <motion.h3 
+              initial={{ scale: 0.8, filter: "blur(10px)" }}
+              animate={{ scale: 1, filter: "blur(0px)" }}
+              className="text-8xl md:text-[10rem] font-black uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-500"
+           >
+             {metrics.topCity}
+           </motion.h3>
+           <p className="text-2xl text-orange-400 font-bold italic">Where your heart beats fastest.</p>
+        </div>
+      )
+    },
     {
       id: "behavior",
+      title: dict.topDay,
+      image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&q=80&w=1200",
       content: (
-        <div className="flex flex-col items-center space-y-12 w-full max-w-4xl">
-          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center space-y-4">
-             <Calendar className="w-16 h-16 text-orange-400 mx-auto mb-4" />
-             <h3 className="text-5xl font-black">{dict.topDay}</h3>
-             <div className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-rose-600 italic">
-               {metrics.topDay[lang]}
+        <div className="flex flex-col items-center space-y-12">
+          <div className="space-y-2 text-center">
+             <div className="text-zinc-500 font-bold uppercase tracking-widest">{dict.topDay}</div>
+             <motion.div initial={{ x: -100 }} animate={{ x: 0 }} className="text-9xl font-black italic text-orange-500">{metrics.topDay[lang]}</motion.div>
+          </div>
+          <motion.div 
+             initial={{ y: 50, opacity: 0 }}
+             animate={{ y: 0, opacity: 1, transition: { delay: 0.5 } }}
+             className="bg-black/40 backdrop-blur-2xl border border-white/10 p-10 rounded-[40px] flex items-center gap-8 shadow-2xl"
+          >
+             <div className="w-20 h-20 bg-yellow-400 rounded-2xl flex items-center justify-center rotate-3">
+                <Zap className="w-12 h-12 text-black fill-black" />
+             </div>
+             <div className="text-left">
+                <div className="text-zinc-400 font-bold uppercase text-sm tracking-widest">{dict.topTime}</div>
+                <div className="text-4xl font-black text-white italic">{dict[metrics.topTime]}</div>
              </div>
           </motion.div>
-          
-          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1, transition: { delay: 0.3 } }} className="flex items-center gap-6 bg-zinc-900/40 p-6 rounded-full border border-zinc-800">
-             <Zap className="w-8 h-8 text-yellow-400" />
-             <span className="text-2xl font-bold">{dict.topTime}: <span className="text-yellow-400 uppercase">{dict[metrics.topTime]}</span></span>
-          </motion.div>
         </div>
-      ),
-      bg: "bg-[radial-gradient(circle_at_bottom_right,_#2d1d11_0%,_#09090b_60%)]"
+      )
     },
-    // Slide 4: Records (Max Speed & Longest)
-    {
-      id: "records",
-      content: (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl px-4">
-          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-zinc-900/60 p-10 rounded-3xl border border-zinc-800 text-center">
-             <Zap className="w-12 h-12 text-yellow-500 mx-auto mb-6" />
-             <div className="text-6xl font-black text-white">{metrics.maxSpeedKph} <span className="text-2xl text-zinc-500 italic">km/h</span></div>
-             <div className="text-xl text-zinc-500 font-bold uppercase tracking-widest mt-2">{dict.maxSpeed}</div>
-          </motion.div>
-          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1, transition: { delay: 0.1 } }} className="bg-zinc-900/60 p-10 rounded-3xl border border-zinc-800 text-center">
-             <Award className="w-12 h-12 text-orange-500 mx-auto mb-6" />
-             <div className="text-6xl font-black text-white">{metrics.longestRunKm} <span className="text-2xl text-zinc-500 italic">km</span></div>
-             <div className="text-xl text-zinc-500 font-bold uppercase tracking-widest mt-2">{dict.longest}</div>
-          </motion.div>
-        </div>
-      ),
-      bg: "bg-[#09090b]"
-    },
-    // Slide 5: Social & Kudos
     {
       id: "social",
+      title: dict.socialStatus,
+      image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&q=80&w=1200",
       content: (
-        <div className="flex flex-col items-center justify-center text-center space-y-8">
-           <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="bg-rose-500/20 p-10 rounded-full">
-              <Heart className="w-24 h-24 text-rose-500 fill-rose-500" />
+        <div className="flex flex-col items-center justify-center text-center space-y-6">
+           <motion.div 
+              animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 3 }}
+              className="relative"
+           >
+              <Heart className="w-40 h-40 text-rose-500 fill-rose-500 drop-shadow-[0_0_40px_rgba(244,63,94,0.6)]" />
+              <div className="absolute inset-0 flex items-center justify-center text-white text-4xl font-black">
+                {metrics.totalKudos}
+              </div>
            </motion.div>
-           <motion.h3 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-4xl font-black uppercase tracking-widest text-zinc-500">{dict.socialStatus}</motion.h3>
-           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-9xl font-black text-white">{metrics.totalKudos}</motion.div>
-           <p className="text-2xl text-zinc-400 font-bold italic">{dict.kudos}</p>
+           <h3 className="text-4xl font-black uppercase tracking-[0.2em] text-white pt-8">{dict.socialStatus}</h3>
+           <p className="text-xl text-zinc-400 font-medium italic">People love what you do.</p>
         </div>
-      ),
-      bg: "bg-[radial-gradient(circle_at_center,_#200d0d_0%,_#09090b_80%)]"
+      )
     },
-    // Final Slide: Summary & Share
     {
       id: "final",
+      title: "Share",
+      image: "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&q=80&w=1200",
       content: (
-        <div className="flex flex-col items-center justify-center text-center space-y-12 w-full max-w-2xl">
-           <div className="space-y-2">
-             <h2 className="text-6xl font-black italic uppercase text-orange-500 leading-tight">Your Story <br/> is Told.</h2>
-             <p className="text-xl text-zinc-400">Now, go make some noise on X!</p>
-           </div>
-           
-           <div className="bg-zinc-900/80 p-8 rounded-[40px] border border-zinc-800 w-full shadow-3xl">
-              <div className="grid grid-cols-2 gap-8 mb-8">
-                <div>
-                   <div className="text-4xl font-black">{metrics.totalDistanceKm}</div>
-                   <div className="text-xs text-zinc-500 font-bold uppercase">KM</div>
-                </div>
-                <div>
-                   <div className="text-4xl font-black">{metrics.topCity}</div>
-                   <div className="text-xs text-zinc-500 font-bold uppercase">BASE</div>
-                </div>
+        <div className="flex flex-col items-center justify-center w-full max-w-lg px-6">
+           <motion.div 
+             initial={{ scale: 0.9, opacity: 0 }}
+             animate={{ scale: 1, opacity: 1 }}
+             className="bg-zinc-900/90 backdrop-blur-2xl border border-white/10 p-10 rounded-[50px] w-full shadow-[0_30px_100px_rgba(0,0,0,0.8)]"
+           >
+              <div className="flex justify-between items-start mb-12">
+                 <div>
+                    <h2 className="text-4xl font-black italic text-orange-500 tracking-tighter">STRAVIFY</h2>
+                    <p className="text-zinc-500 font-bold text-xs uppercase tracking-widest">Wrapped 2026</p>
+                 </div>
+                 <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center">
+                    <Volume2 className="w-5 h-5 text-zinc-500" />
+                 </div>
               </div>
-              <ShareButton 
-                  distance={metrics.totalDistanceKm} 
-                  elevation={metrics.totalElevationMeters} 
-                  runs={metrics.runCount}
-                  time={metrics.totalHours}
-                  city={metrics.topCity}
-                  name={name}
-                  lang={lang}
-                  buttonText={dict.shareX}
-                  shareText={`Wrapped by Stravify: ${metrics.totalDistanceKm} KM / ${metrics.totalHours} HOURS in 100 activities! 🔥`}
-                />
-           </div>
+
+              <div className="space-y-10">
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                       <div className="text-4xl font-black text-white">{metrics.totalDistanceKm}</div>
+                       <div className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{dict.totalKm}</div>
+                    </div>
+                    <div className="space-y-1">
+                       <div className="text-4xl font-black text-white">{metrics.totalHours}</div>
+                       <div className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{dict.time}</div>
+                    </div>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                       <div className="text-4xl font-black text-white">{metrics.topCity}</div>
+                       <div className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{dict.topCity}</div>
+                    </div>
+                    <div className="space-y-1">
+                       <div className="text-4xl font-black text-white">{metrics.runCount}</div>
+                       <div className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{dict.activities}</div>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="mt-14 pt-8 border-t border-white/5">
+                <ShareButton 
+                    distance={metrics.totalDistanceKm} 
+                    elevation={metrics.totalElevationMeters} 
+                    runs={metrics.runCount}
+                    time={metrics.totalHours}
+                    city={metrics.topCity}
+                    name={name}
+                    lang={lang}
+                    buttonText={dict.shareX}
+                    shareText={`Just dropped my Stravify Wrapped! 🏃‍♂️🔥 Check yours at stravify-ai.vercel.app #Stravify`}
+                  />
+              </div>
+           </motion.div>
         </div>
-      ),
-      bg: "bg-[#09090b]"
+      )
     }
   ];
 
-  const nextSlide = () => {
-    if (currentSlide < slides.length - 1) setCurrentSlide(currentSlide + 1);
-  };
+  const nextSlide = useCallback(() => {
+    if (currentSlide < slides.length - 1) {
+      setCurrentSlide(prev => prev + 1);
+      setProgress(0);
+    }
+  }, [currentSlide, slides.length]);
 
-  const prevSlide = () => {
-    if (currentSlide > 0) setCurrentSlide(currentSlide - 1);
-  };
+  const prevSlide = useCallback(() => {
+    if (currentSlide > 0) {
+      setCurrentSlide(prev => prev - 1);
+      setProgress(0);
+    }
+  }, [currentSlide]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          nextSlide();
+          return 0;
+        }
+        return prev + (100 / (SLIDE_DURATION / 100));
+      });
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [currentSlide, nextSlide]);
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center ${slides[currentSlide].bg} transition-colors duration-1000 overflow-hidden`}>
-      {/* Background grain/noise effect */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black overflow-hidden font-sans select-none">
+      {/* Background Images with Zoom Animation */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={slides[currentSlide].image}
+          initial={{ scale: 1.2, opacity: 0 }}
+          animate={{ scale: 1.1, opacity: 0.6 }}
+          exit={{ scale: 1, opacity: 0 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          className="absolute inset-0 z-0"
+        >
+          <img 
+            src={slides[currentSlide].image} 
+            alt="bg" 
+            className="w-full h-full object-cover grayscale-[0.5] brightness-[0.3]" 
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black" />
+        </motion.div>
+      </AnimatePresence>
 
-      {/* Progress Bar */}
-      <div className="absolute top-6 left-6 right-6 flex gap-1 z-50">
+      {/* Progress Bars (Instagram Style) */}
+      <div className="absolute top-6 left-4 right-4 flex gap-1.5 z-50">
         {slides.map((_, i) => (
-          <div key={i} className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
+          <div key={i} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
             <motion.div 
               initial={{ width: "0%" }}
-              animate={{ width: i < currentSlide ? "100%" : i === currentSlide ? "100%" : "0%" }}
-              transition={{ duration: i === currentSlide ? 5 : 0.3 }}
-              onAnimationComplete={() => {
-                 if (i === currentSlide && currentSlide < slides.length - 1) {
-                    // nextSlide(); // Auto progress option
-                 }
+              animate={{ 
+                width: i < currentSlide ? "100%" : i === currentSlide ? `${progress}%` : "0%" 
               }}
-              className="h-full bg-white/80"
+              transition={{ duration: 0.1, ease: "linear" }}
+              className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
             />
           </div>
         ))}
       </div>
 
-      {/* Navigation Areas (Invisible Click Areas) */}
+      {/* Navigation Areas */}
       <div className="absolute inset-0 flex z-30">
-        <div className="w-1/4 h-full cursor-w-resize" onClick={prevSlide}></div>
-        <div className="w-3/4 h-full cursor-e-resize" onClick={nextSlide}></div>
+        <div className="w-1/3 h-full cursor-w-resize" onClick={prevSlide} />
+        <div className="w-2/3 h-full cursor-e-resize" onClick={nextSlide} />
       </div>
 
+      {/* Content Transition */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentSlide}
-          initial={{ opacity: 0, x: 50, scale: 0.9 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: -50, scale: 0.9 }}
-          transition={{ type: "spring", damping: 20, stiffness: 100 }}
+          initial={{ opacity: 0, scale: 0.9, filter: "blur(20px)" }}
+          animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+          exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="z-40 w-full flex items-center justify-center"
         >
           {slides[currentSlide].content}
         </motion.div>
       </AnimatePresence>
 
-      {/* Manual Controls */}
-      <div className="absolute bottom-10 flex gap-4 z-50">
-        {currentSlide > 0 && (
-          <button onClick={prevSlide} className="p-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-            <ChevronLeft className="w-8 h-8" />
-          </button>
-        )}
-        {currentSlide < slides.length - 1 && (
-          <button onClick={nextSlide} className="p-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-            <ChevronRight className="w-8 h-8" />
-          </button>
-        )}
+      {/* Bottom Brand Tag */}
+      <div className="absolute bottom-8 left-0 right-0 text-center z-50 pointer-events-none">
+         <span className="text-white/30 font-black text-xs tracking-[0.5em] uppercase">Built with Stravify AI</span>
       </div>
 
-      {/* Background Decor (Blurry blobs) */}
-      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-orange-600/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
-      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-rose-600/10 rounded-full blur-[100px] -z-10 animate-pulse" style={{ animationDelay: '1s' }}></div>
+      {/* Grain Effect Overlay */}
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none mix-blend-overlay z-10" />
     </div>
   );
 }
