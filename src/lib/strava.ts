@@ -10,14 +10,13 @@ export async function getStravaActivities(accessToken: string) {
   );
 
   if (!res.ok) {
-    throw new Error("Strava'dan veri çekilemedi. Token süresi dolmuş olabilir.");
+    throw new Error("Strava'dan veri çekilemedi.");
   }
 
   const activities = await res.json();
   return activities;
 }
 
-// Global mesafe karşılaştırmaları
 const CITY_COMPARISONS: Record<string, { city: string, dist: number }> = {
   "Istanbul": { city: "Ankara", dist: 350 },
   "London": { city: "Paris", dist: 340 },
@@ -33,71 +32,82 @@ export function calculateMetrics(activities: any[]) {
   let totalDistanceMeters = 0;
   let totalElevationMeters = 0;
   let totalMovingTimeSeconds = 0;
-  let runCount = 0;
+  let totalKudos = 0;
   let longestRunMeters = 0;
+  let maxSpeed = 0; // m/s
   
   const cities: Record<string, number> = {};
+  const dayOfWeek: Record<string, number> = { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0 };
+  const timeOfDay: { morning: number, afternoon: number, evening: number, night: number } = { morning: 0, afternoon: 0, evening: 0, night: 0 };
 
   activities.forEach((activity: any) => {
     totalDistanceMeters += activity.distance;
     totalElevationMeters += activity.total_elevation_gain;
     totalMovingTimeSeconds += activity.moving_time;
-    runCount += 1;
+    totalKudos += (activity.kudos_count || 0);
 
-    if (activity.distance > longestRunMeters) {
-      longestRunMeters = activity.distance;
-    }
+    if (activity.distance > longestRunMeters) longestRunMeters = activity.distance;
+    if (activity.max_speed > maxSpeed) maxSpeed = activity.max_speed;
 
-    if (activity.location_city) {
-      cities[activity.location_city] = (cities[activity.location_city] || 0) + 1;
-    } else if (activity.timezone) {
-      const tzCity = activity.timezone.split('/').pop()?.replace('_', ' ');
-      if (tzCity) {
-        cities[tzCity] = (cities[tzCity] || 0) + 1;
-      }
+    // Gün Analizi
+    const date = new Date(activity.start_date_local);
+    dayOfWeek[date.getDay().toString()] += 1;
+
+    // Saat Analizi
+    const hour = date.getHours();
+    if (hour >= 5 && hour < 12) timeOfDay.morning += 1;
+    else if (hour >= 12 && hour < 17) timeOfDay.afternoon += 1;
+    else if (hour >= 17 && hour < 21) timeOfDay.evening += 1;
+    else timeOfDay.night += 1;
+
+    // Şehir tespiti - Daha güvenilir bir yöntem
+    let city = activity.location_city;
+    if (!city && activity.timezone) {
+       // "Europe/Istanbul" -> "Istanbul" (Atikokan gibi garip yerleri filtrele)
+       const parts = activity.timezone.split('/');
+       const tzCity = parts.pop()?.replace('_', ' ');
+       if (tzCity && !["Atikokan", "UTC"].includes(tzCity)) {
+         city = tzCity;
+       }
     }
+    if (city) cities[city] = (cities[city] || 0) + 1;
   });
 
-  let topCity = "";
-  let maxCount = 0;
-  for (const [city, count] of Object.entries(cities)) {
-    if (count > maxCount) {
-      maxCount = count;
-      topCity = city;
-    }
-  }
+  // En çok bulunulan şehri bul (Boş değilse)
+  let topCity = Object.entries(cities).sort((a,b) => b[1] - a[1])[0]?.[0] || "Earth";
+  
+  // Favori Gün
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const daysTr = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+  const topDayIndex = Object.entries(dayOfWeek).sort((a,b) => b[1] - a[1])[0]?.[0] || "0";
+  
+  // Favori Zaman
+  const topTime = Object.entries(timeOfDay).sort((a,b) => b[1] - a[1])[0]?.[0] || "morning";
 
   const totalDistanceKm = (totalDistanceMeters / 1000).toFixed(1);
-  const totalElevationMetersRounded = Math.round(totalElevationMeters);
   const totalHours = (totalMovingTimeSeconds / 3600).toFixed(1);
+  const avgPace = (totalMovingTimeSeconds / (totalDistanceMeters / 1000) / 60).toFixed(2); // min/km (yaklaşık)
   
-  // Dinamik mesafe karşılaştırması
-  let comparison = { city: "the Moon (0.1%)", dist: 384.4 }; // Default
-  
-  // En çok bulunulan şehre göre en yakın büyük rotayı bul
-  if (topCity && CITY_COMPARISONS[topCity]) {
-    comparison = CITY_COMPARISONS[topCity];
-  } else {
-    // Eğer tam eşleşme yoksa, genel bir tanesini seç (ya da ilkini)
-    comparison = CITY_COMPARISONS["London"]; 
-  }
-
+  // Dinamik karşılaştırma
+  let comparison = CITY_COMPARISONS[topCity] || CITY_COMPARISONS["London"];
   const travelCount = (parseFloat(totalDistanceKm) / comparison.dist).toFixed(1);
-  const eiffelClimbs = (totalElevationMeters / 330).toFixed(1);
-  const everestClimbs = (totalElevationMeters / 8848).toFixed(2);
 
   return {
-    runCount,
+    runCount: activities.length,
     totalDistanceKm,
-    totalElevationMeters: totalElevationMetersRounded,
+    totalElevationMeters: Math.round(totalElevationMeters),
     longestRunKm: (longestRunMeters / 1000).toFixed(1),
     totalHours,
-    topCity: topCity || null,
+    totalKudos,
+    topCity,
+    topDay: { en: days[parseInt(topDayIndex)], tr: daysTr[parseInt(topDayIndex)] },
+    topTime,
+    maxSpeedKph: (maxSpeed * 3.6).toFixed(1), // km/h
     funFacts: {
       comparisonCity: comparison.city,
       travelCount: travelCount,
-      eiffel: eiffelClimbs,
-      everest: everestClimbs,
+      eiffel: (totalElevationMeters / 330).toFixed(1),
+      everest: (totalElevationMeters / 8848).toFixed(2),
     }
   };
 }
