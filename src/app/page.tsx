@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./api/auth/[...nextauth]/route";
 import LoginButton from "@/components/LoginButton";
-import { getStravaActivities, calculateMetrics } from "@/lib/strava";
+import { getStravaData, calculateMetrics } from "@/lib/strava";
 import LogoutButton from "@/components/LogoutButton";
 import WrappedStory from "@/components/WrappedStory";
 import { getDictionary, Language } from "@/lib/i18n";
@@ -22,8 +22,8 @@ export default async function Home() {
     
     try {
       // @ts-ignore
-      const activities = await getStravaActivities(session.accessToken);
-      metrics = calculateMetrics(activities);
+      const { athlete, activities } = await getStravaData(session.accessToken);
+      metrics = calculateMetrics(athlete, activities);
     } catch (error: any) {
       errorMsg = dict.error;
     }
@@ -33,7 +33,7 @@ export default async function Home() {
         <main className="flex min-h-screen flex-col items-center justify-center bg-[#09090b] text-white p-6">
            <div className="bg-red-950/50 border border-red-500 text-red-200 p-8 rounded-3xl max-w-md text-center backdrop-blur-md">
              {errorMsg}
-             <div className="mt-6">
+             <div className="mt-6 text-center flex justify-center">
                 <LogoutButton text={dict.logout} />
              </div>
            </div>
@@ -46,14 +46,13 @@ export default async function Home() {
         metrics={metrics} 
         dict={dict} 
         lang={lang} 
-        name={session.user?.name || "Athlete"} 
+        name={metrics?.profile.name || "Athlete"} 
       />
     );
   }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[#09090b] text-white p-6 overflow-hidden relative font-sans text-center">
-      {/* Landing UI */}
       <div className="absolute top-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_#2d1d11_0%,_#09090b_70%)] -z-10"></div>
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none mix-blend-overlay"></div>
 
@@ -72,10 +71,6 @@ export default async function Home() {
         <div className="pt-8">
           <LoginButton text={dict.connect} />
         </div>
-      </div>
-
-      <div className="absolute bottom-10 text-zinc-600 text-sm font-bold uppercase tracking-widest">
-        Powered by Strava & Stravify
       </div>
     </main>
   );

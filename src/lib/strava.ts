@@ -1,20 +1,26 @@
-export async function getStravaActivities(accessToken: string) {
-  const res = await fetch(
+export async function getStravaData(accessToken: string) {
+  // 1. Profil bilgilerini çek (Gerçek şehir ve profil resmi için)
+  const athleteRes = await fetch("https://www.strava.com/api/v3/athlete", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  
+  // 2. Aktiviteleri çek
+  const activitiesRes = await fetch(
     "https://www.strava.com/api/v3/athlete/activities?per_page=100",
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: { Authorization: `Bearer ${accessToken}` },
       next: { revalidate: 3600 },
     }
   );
 
-  if (!res.ok) {
+  if (!athleteRes.ok || !activitiesRes.ok) {
     throw new Error("Strava'dan veri çekilemedi.");
   }
 
-  const activities = await res.json();
-  return activities;
+  const athlete = await athleteRes.json();
+  const activities = await activitiesRes.json();
+
+  return { athlete, activities };
 }
 
 const CITY_COMPARISONS: Record<string, { city: string, dist: number }> = {
@@ -28,17 +34,16 @@ const CITY_COMPARISONS: Record<string, { city: string, dist: number }> = {
   "Toronto": { city: "Montreal", dist: 540 },
 };
 
-export function calculateMetrics(activities: any[]) {
+export function calculateMetrics(athlete: any, activities: any[]) {
   let totalDistanceMeters = 0;
   let totalElevationMeters = 0;
   let totalMovingTimeSeconds = 0;
   let totalKudos = 0;
   let longestRunMeters = 0;
-  let maxSpeed = 0; // m/s
+  let maxSpeed = 0; 
   
-  const cities: Record<string, number> = {};
   const dayOfWeek: Record<string, number> = { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0 };
-  const timeOfDay: { morning: number, afternoon: number, evening: number, night: number } = { morning: 0, afternoon: 0, evening: 0, night: 0 };
+  const timeOfDay = { morning: 0, afternoon: 0, evening: 0, night: 0 };
 
   activities.forEach((activity: any) => {
     totalDistanceMeters += activity.distance;
@@ -49,60 +54,45 @@ export function calculateMetrics(activities: any[]) {
     if (activity.distance > longestRunMeters) longestRunMeters = activity.distance;
     if (activity.max_speed > maxSpeed) maxSpeed = activity.max_speed;
 
-    // Gün Analizi
     const date = new Date(activity.start_date_local);
     dayOfWeek[date.getDay().toString()] += 1;
 
-    // Saat Analizi
     const hour = date.getHours();
     if (hour >= 5 && hour < 12) timeOfDay.morning += 1;
     else if (hour >= 12 && hour < 17) timeOfDay.afternoon += 1;
     else if (hour >= 17 && hour < 21) timeOfDay.evening += 1;
     else timeOfDay.night += 1;
-
-    // Şehir tespiti - Daha güvenilir bir yöntem
-    let city = activity.location_city;
-    if (!city && activity.timezone) {
-       // "Europe/Istanbul" -> "Istanbul" (Atikokan gibi garip yerleri filtrele)
-       const parts = activity.timezone.split('/');
-       const tzCity = parts.pop()?.replace('_', ' ');
-       if (tzCity && !["Atikokan", "UTC"].includes(tzCity)) {
-         city = tzCity;
-       }
-    }
-    if (city) cities[city] = (cities[city] || 0) + 1;
   });
 
-  // En çok bulunulan şehri bul (Boş değilse)
-  let topCity = Object.entries(cities).sort((a,b) => b[1] - a[1])[0]?.[0] || "Earth";
+  // Şehri doğrudan profilden alıyoruz (Atikokan faciasına son!)
+  const topCity = athlete.city || athlete.state || "Earth";
   
-  // Favori Gün
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const daysTr = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
   const topDayIndex = Object.entries(dayOfWeek).sort((a,b) => b[1] - a[1])[0]?.[0] || "0";
-  
-  // Favori Zaman
   const topTime = Object.entries(timeOfDay).sort((a,b) => b[1] - a[1])[0]?.[0] || "morning";
 
   const totalDistanceKm = (totalDistanceMeters / 1000).toFixed(1);
   const totalHours = (totalMovingTimeSeconds / 3600).toFixed(1);
-  const avgPace = (totalMovingTimeSeconds / (totalDistanceMeters / 1000) / 60).toFixed(2); // min/km (yaklaşık)
   
-  // Dinamik karşılaştırma
   let comparison = CITY_COMPARISONS[topCity] || CITY_COMPARISONS["London"];
   const travelCount = (parseFloat(totalDistanceKm) / comparison.dist).toFixed(1);
 
   return {
+    profile: {
+      name: `${athlete.firstname} ${athlete.lastname}`,
+      city: topCity,
+      profileImg: athlete.profile,
+    },
     runCount: activities.length,
     totalDistanceKm,
     totalElevationMeters: Math.round(totalElevationMeters),
     longestRunKm: (longestRunMeters / 1000).toFixed(1),
     totalHours,
     totalKudos,
-    topCity,
     topDay: { en: days[parseInt(topDayIndex)], tr: daysTr[parseInt(topDayIndex)] },
     topTime,
-    maxSpeedKph: (maxSpeed * 3.6).toFixed(1), // km/h
+    maxSpeedKph: (maxSpeed * 3.6).toFixed(1),
     funFacts: {
       comparisonCity: comparison.city,
       travelCount: travelCount,
