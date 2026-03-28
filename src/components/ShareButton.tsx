@@ -5,24 +5,30 @@ import { Share2 } from "lucide-react";
 export default function ShareButton({ 
   distance, 
   elevation, 
-  runs, 
-  name 
+  runs,
+  time,
+  city,
+  name,
+  lang,
+  buttonText,
+  shareText
 }: { 
   distance: string, 
   elevation: number, 
   runs: number, 
-  name: string 
+  time: string,
+  city: string,
+  name: string,
+  lang: string,
+  buttonText: string,
+  shareText: string
 }) {
   
   const handleShare = () => {
-    // Vercel'deki sitenin URL'si
     const baseUrl = "https://stravify-rho.vercel.app";
-    const ogUrl = `${baseUrl}/api/og?distance=${distance}&elevation=${elevation}&runs=${runs}&name=${encodeURIComponent(name)}`;
+    const ogUrl = `${baseUrl}/api/og?distance=${distance}&elevation=${elevation}&runs=${runs}&time=${time}&city=${encodeURIComponent(city)}&name=${encodeURIComponent(name)}&lang=${lang}`;
     
-    const text = `Son 100 aktivitemde toplam ${distance} KM devirdim ve ${elevation}m tırmandım! 🏃‍♂️🔥 Kendi istatistiklerini oluşturmak için: ${baseUrl}`;
-    
-    // X (Twitter) paylaşım linkini oluşturuyoruz
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(baseUrl)}`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(baseUrl)}`;
     
     window.open(twitterUrl, "_blank");
   };
@@ -30,10 +36,10 @@ export default function ShareButton({
   return (
     <button
       onClick={handleShare}
-      className="flex items-center gap-2 mt-8 px-6 py-3 bg-[#1DA1F2] hover:bg-[#1a91da] text-white rounded-full font-bold transition-all hover:scale-105 shadow-[0_0_20px_rgba(29,161,242,0.3)]"
+      className="flex items-center gap-2 mt-8 px-8 py-4 bg-gradient-to-r from-[#1DA1F2] to-[#1a91da] hover:scale-105 text-white rounded-full font-bold transition-all shadow-[0_0_30px_rgba(29,161,242,0.4)] hover:shadow-[0_0_50px_rgba(29,161,242,0.6)]"
     >
-      <Share2 className="w-5 h-5" />
-      X'te (Twitter) Paylaş
+      <Share2 className="w-6 h-6" />
+      {buttonText}
     </button>
   );
 }
